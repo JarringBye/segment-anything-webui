@@ -62,28 +62,53 @@ def retrieve(
 
 @click.command()
 @click.option('--model',
-              default='vit_b',
+              default='vit_l',
               help='model name',
               type=click.Choice(['vit_b', 'vit_l', 'vit_h']))
-@click.option('--model_path', default='model/sam_vit_b_01ec64.pth', help='model path')
-@click.option('--port', default=8000, help='port')
+@click.option('--model_path', default='model/sam_vit_l_0b3195.pth', help='model path')
+@click.option('--port', default=9097, help='port')
 @click.option('--host', default='0.0.0.0', help='host')
-def main(
-        model="vit_b",
-        model_path="model/sam_vit_b_01ec64.pth",
-        port=8000,
-        host="0.0.0.0",
-):
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+@click.option('--device', default='cuda', help='device', type=click.Choice(['cuda','cpu']))
+@click.option('--clip_model', default='ViT-B/16', help='clip_model')
+def main(model,model_path,port,host,device,clip_model):
+    if device == "cuda":
+        if torch.cuda.is_available():
+            device = torch.device("cuda")
+        else:
+            print("cuda is not available")
+    else:
+        device = torch.device("cpu")
     print("device:", device)
+
+    points_per_side=32
+    pred_iou_thresh=0.88
+    stability_score_thresh=0.95
+    stability_score_offset=1
+    box_nms_thresh=0.7
+    crop_n_layers=0
+    crop_nms_thresh=0.7
+    min_mask_region_area=0
 
     build_sam = sam_model_registry[model]
     model = build_sam(checkpoint=model_path).to(device)
-    predictor = SamPredictor(model)
+    predictor = SamPredictor(
+        model,
+        points_per_side=points_per_side,
+        pred_iou_thresh=pred_iou_thresh,
+        stability_score_thresh=stability_score_thresh,
+        stability_score_offset=stability_score_offset,
+        box_nms_thresh=box_nms_thresh,
+        crop_n_layers=crop_n_layers,
+        crop_nms_thresh=crop_nms_thresh,
+        crop_overlap_ratio=512 / 1500,
+        crop_n_points_downscale_factor=1,
+        point_grids=None,
+        min_mask_region_area=min_mask_region_area,
+        output_mode='binary_mask')
     mask_generator = SamAutomaticMaskGenerator(model)
     model_lock = Lock()
 
-    clip_model, preprocess = clip.load("ViT-B/16", device=device)
+    clip_model, preprocess = clip.load(clip_model, device)
 
     app = FastAPI()
 
