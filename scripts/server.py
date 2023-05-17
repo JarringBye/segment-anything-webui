@@ -91,21 +91,21 @@ def main(model,model_path,port,host,device,clip_model):
 
     build_sam = sam_model_registry[model]
     model = build_sam(checkpoint=model_path).to(device)
-    predictor = SamPredictor(
-        model,
-        points_per_side=points_per_side,
-        pred_iou_thresh=pred_iou_thresh,
-        stability_score_thresh=stability_score_thresh,
-        stability_score_offset=stability_score_offset,
-        box_nms_thresh=box_nms_thresh,
-        crop_n_layers=crop_n_layers,
-        crop_nms_thresh=crop_nms_thresh,
-        crop_overlap_ratio=512 / 1500,
-        crop_n_points_downscale_factor=1,
-        point_grids=None,
-        min_mask_region_area=min_mask_region_area,
-        output_mode='binary_mask')
-    mask_generator = SamAutomaticMaskGenerator(model)
+    predictor = SamPredictor(model)
+    mask_generator = SamAutomaticMaskGenerator(
+           model,
+            points_per_side=points_per_side,
+            pred_iou_thresh=pred_iou_thresh,
+            stability_score_thresh=stability_score_thresh,
+            stability_score_offset=stability_score_offset,
+            box_nms_thresh=box_nms_thresh,
+            crop_n_layers=crop_n_layers,
+            crop_nms_thresh=crop_nms_thresh,
+            crop_overlap_ratio=512 / 1500,
+            crop_n_points_downscale_factor=1,
+            point_grids=None,
+            min_mask_region_area=min_mask_region_area,
+            output_mode='binary_mask')
     model_lock = Lock()
 
     clip_model, preprocess = clip.load(clip_model, device)
